@@ -3,6 +3,12 @@ The project was fully implemented by Claude Code. All documentation beyond this 
 
 # vscodetool
 
+![img_1](img/img_1.png)
+
+![img_2](img/img_2.png)
+
+![img_3](img/img_3.png)
+
 Profile any Odoo request (or cron run) and look into it inside VS Code: every profiler number, a
 speedscope view, a call stack, the ormcache and field cache, every record it changed. Then **debug
 the recorded request with your normal VS Code debugger**: breakpoints, stepping, hover, watches, the
