@@ -1,0 +1,91 @@
+/* written fields: a yellow that reads well on the theme's background */
+body { --write: #f2d15c; }
+body.vscode-light, body.vscode-high-contrast-light { --write: #8a6d00; }
+html, body { height: 100%; overflow: hidden; }
+body { display: flex; flex-direction: column; }
+#toolbar { display: flex; gap: 10px; align-items: center; padding: 6px 10px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+#toolbar .title { font-weight: 600; }
+#toolbar input[type=number] { width: 48px; }
+#toolbar .hint { font-size: 0.9em; }
+#toolbar .warn { color: var(--warn); }
+#tip { position: fixed; z-index: 10; max-width: 460px; padding: 8px 10px; border-radius: 4px; pointer-events: none;
+  background: var(--vscode-editorHoverWidget-background, var(--vscode-editor-background, #252526)); color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground, #ccc));
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--border)); box-shadow: 0 2px 8px #0006; }
+#tip .name { font-weight: 600; word-break: break-all; }
+#tip .head { margin-top: 6px; }
+#tip .hint { margin-top: 6px; font-size: 0.9em; }
+#tip div { overflow-wrap: anywhere; }
+#rg[hidden] { display: none; }
+
+/* record graph: HTML tables over SVG lines, in a layer that pans and zooms */
+#rg { --w: var(--write); --rf: var(--vscode-charts-blue, #3794ff); --rc: color-mix(in srgb, var(--rf) 45%, var(--muted));
+  --sel: var(--warn); --node-bg: color-mix(in srgb, var(--fg) 5%, var(--bg));
+  flex: 1; min-height: 0; position: relative; overflow: hidden; cursor: grab; user-select: none; }
+#rg.dragging { cursor: grabbing; }
+#rg .world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#rg svg.edges { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; }
+#rg .frame { fill: color-mix(in srgb, var(--fg) 2%, transparent); stroke: var(--border); stroke-dasharray: 6 4; }
+#rg .frame-label { fill: var(--muted); font: 12px var(--vscode-font-family); }
+#rg .edge path { fill: none; stroke-width: 1.6; }
+#rg .edge.relation path { stroke: var(--rf); }
+#rg .edge.update path { stroke: var(--sel); stroke-width: 2.5; }
+#rg .edge text { font: 10px var(--mono); fill: var(--muted); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; text-anchor: middle; }
+#rg .arrow.relation path { fill: var(--rf); }
+#rg .arrow.update path { fill: var(--sel); }
+#rg svg.focus .edge { opacity: 0.12; }
+#rg svg.focus .edge.on { opacity: 1; }
+#rg svg.focus .edge.on path { stroke-width: 2.5; }
+#rg svg.focus .edge.on text { fill: var(--fg); }
+
+#rg .node { position: absolute; background: var(--node-bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 0 6px;
+  font: 11px/1.45 var(--mono); color: var(--fg); box-shadow: 0 1px 4px #0004; cursor: default; }
+#rg .node.written { border-color: color-mix(in srgb, var(--w) 70%, transparent); }
+#rg .node.selected { border: 2px solid var(--sel); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sel) 18%, transparent), 0 1px 4px #0004; }
+#rg .node.upd { border: 2px solid var(--sel); background: color-mix(in srgb, var(--sel) 14%, var(--bg)); padding: 4px 10px 6px; cursor: pointer; }
+#rg .node .title { display: flex; gap: 6px; align-items: baseline; padding: 0 10px 2px; white-space: nowrap; font-weight: 600; }
+#rg .node.rec .title { cursor: pointer; }
+#rg .node .title:hover .label { text-decoration: underline; }
+#rg .node .twisty { color: var(--muted); width: 1em; }
+#rg .node .count { margin-left: auto; padding-left: 12px; color: var(--muted); font-weight: normal; }
+#rg .node .name { padding: 0 10px 0 calc(10px + 1em + 6px); color: var(--muted); font-family: var(--vscode-font-family); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px; }
+#rg .node.upd .name { padding: 0; }
+#rg .node table { width: auto; border-collapse: collapse; margin-top: 4px; border-top: 1px solid var(--border); }
+#rg .node td { border: none; padding: 0 10px; white-space: nowrap; background: none; }
+#rg .node td.f { padding-left: calc(10px + 1em + 6px); }
+#rg .node td.v { max-width: 380px; overflow: hidden; text-overflow: ellipsis; }
+#rg .node tr:hover td { background: var(--hover); }
+#rg .node tr.w td { color: var(--w); }
+#rg .node tr.rf td { color: var(--rf); }
+#rg .node tr.rc td { color: var(--rc); }
+#rg .node tr.w td.f { font-weight: 600; }
+#rg .node .also { color: var(--rf); opacity: 0.8; }
+#rg .node tr.sel td { background: color-mix(in srgb, var(--sel) 28%, transparent); color: var(--fg); font-weight: 700; }
+#rg .node tr.sel td.f { box-shadow: inset 3px 0 0 var(--sel); }
+#rg .node .more { padding: 2px 10px 0 calc(10px + 1em + 6px); color: var(--accent); cursor: pointer; }
+#rg .node .more:hover { text-decoration: underline; }
+#rg .tag { font: 10px var(--vscode-font-family); font-weight: normal; padding: 0 5px; border-radius: 7px; border: 1px solid; }
+#rg .tag.created { color: var(--ok); }
+#rg .tag.deleted { color: var(--error); }
+#rg .tag.written { color: var(--w); }
+#toolbar .legend { display: inline-flex; gap: 8px; margin-right: 6px; font-family: var(--mono); }
+#toolbar .legend .w { color: var(--write); }
+#toolbar .legend .rf { color: var(--vscode-charts-blue, #3794ff); }
+#toolbar .legend .rc { color: color-mix(in srgb, var(--vscode-charts-blue, #3794ff) 45%, var(--muted)); }
+#toolbar .legend .sel { background: color-mix(in srgb, var(--warn) 28%, transparent); padding: 0 4px; font-weight: 700; }
+#rg .node.upd { white-space: nowrap; }
+/* hovering a record: the records it isn't linked to dim with their lines */
+#rg .node { transition: opacity 0.12s; }
+#rg .world.focus .node:not(.near) { opacity: 0.22; }
+/* modules menu */
+details.menu { position: relative; }
+details.menu > summary { cursor: pointer; padding: 3px 8px; border: 1px solid var(--vscode-input-border, var(--border)); border-radius: 2px; background: var(--vscode-input-background); list-style: none; user-select: none; }
+details.menu > summary::after { content: ' ▾'; color: var(--muted); }
+details.menu .pop { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; min-width: 260px; max-height: 60vh; overflow: auto; padding: 6px 0;
+  background: var(--vscode-menu-background, var(--vscode-editorWidget-background, var(--bg))); border: 1px solid var(--vscode-menu-border, var(--border)); border-radius: 4px; box-shadow: 0 2px 8px #0006; }
+details.menu .pop label { display: flex; gap: 8px; align-items: baseline; padding: 2px 10px; white-space: nowrap; cursor: pointer; }
+details.menu .pop label:hover { background: var(--hover); }
+details.menu .pop label .muted { margin-left: auto; padding-left: 12px; font-size: 0.9em; }
+details.menu .pop .bar { display: flex; gap: 6px; padding: 0 10px 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+button.mini { padding: 0 8px; font-size: 0.9em; }
+#stack { flex: 1; min-height: 0; overflow: auto; }
+#stack[hidden], #legend[hidden] { display: none; }

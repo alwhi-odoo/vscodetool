@@ -1,0 +1,46 @@
+/* call stack table (calltable.js) */
+table.calltable { font-size: 12px; }
+table.calltable th { cursor: default; }
+table.calltable td { padding: 1px 8px; border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent); vertical-align: top; }
+table.calltable tbody tr { cursor: pointer; }
+table.calltable tbody td { background: color-mix(in srgb, var(--c) 9%, transparent); }
+table.calltable tbody tr:hover td { background: color-mix(in srgb, var(--c) 22%, transparent); }
+table.calltable td.fn { width: 60%; }
+table.calltable .cell { white-space: nowrap; font-family: var(--mono); font-size: var(--vscode-editor-font-size, 12px); }
+table.calltable .tw { display: inline-block; width: 1.1em; color: var(--muted); }
+table.calltable .sw { display: inline-block; width: 4px; height: 1.05em; vertical-align: -0.15em; margin-right: 6px; border-radius: 2px; background: var(--c); }
+table.calltable .name:hover .last { text-decoration: underline; }
+table.calltable .pre { color: var(--muted); }
+table.calltable .last { font-weight: 600; }
+table.calltable .where { margin-left: 10px; color: var(--muted); font-family: var(--vscode-font-family); font-size: 0.9em; }
+table.calltable .hidden { margin-left: 6px; color: var(--muted); font-size: 0.85em; border: 1px solid var(--border); border-radius: 7px; padding: 0 5px; }
+table.calltable .via { margin-left: calc(1.1em + 10px); color: var(--muted); font-size: 0.9em; }
+table.calltable .mk { margin-left: 6px; color: var(--warn); font-weight: 700; }
+/* framework: lighter, italic */
+table.calltable tr.fw td { background: color-mix(in srgb, var(--c) 4%, transparent); }
+table.calltable tr.fw .name { font-style: italic; opacity: 0.8; }
+/* the field changed in this call; dimmed: no change across it */
+table.calltable tr.update td.fn { box-shadow: inset 3px 0 0 var(--warn); }
+table.calltable tr.update .last { color: var(--warn); }
+table.calltable tr.dim td { opacity: 0.5; }
+/* search */
+table.calltable tr.nomatch td { opacity: 0.35; }
+table.calltable tr.match td { background: color-mix(in srgb, var(--warn) 22%, transparent); }
+table.calltable tr.match .last { color: var(--warn); }
+table.calltable td.total { position: relative; min-width: 90px; }
+table.calltable .tbar { position: absolute; left: 0; top: 2px; bottom: 2px; background: var(--c); opacity: 0.25; border-radius: 0 2px 2px 0; }
+table.calltable td.total span { position: relative; }
+table.calltable td.value { font-family: var(--mono); white-space: nowrap; }
+.note { padding: 8px 10px; }
+#legend { display: flex; gap: 4px 12px; align-items: center; flex-wrap: wrap; padding: 4px 10px 6px; border-bottom: 1px solid var(--border); font-size: 0.9em; }
+#legend:empty { display: none; }
+#legend .key { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+#legend .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+#legend .gradient { width: 220px; height: 10px; border-radius: 3px; display: inline-block; }
+#tip { position: fixed; z-index: 10; max-width: 520px; padding: 8px 10px; border-radius: 4px; pointer-events: none;
+  background: var(--vscode-editorHoverWidget-background, var(--vscode-editor-background, #252526)); color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground, #ccc));
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--border)); box-shadow: 0 2px 8px #0006; }
+#tip .name { font-weight: 600; word-break: break-all; }
+#tip .head { margin-top: 6px; }
+#tip .hint { margin-top: 6px; font-size: 0.9em; }
+#tip div { overflow-wrap: anywhere; }

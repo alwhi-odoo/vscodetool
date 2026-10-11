@@ -1,0 +1,13 @@
+spike/out/
+__pycache__/
+*.pyc
+extension/node_modules/
+extension/dist/
+extension/*.vsix
+extension/media/speedscope/
+.retrace/
+samples/cron_*.oprof.json
+extension/dist-test/
+extension/odoo_addon/
+.claude/
+extension/README.md

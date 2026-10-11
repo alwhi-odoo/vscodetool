@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_view_form_oprof" model="ir.ui.view">
+        <field name="name">ir.cron.view.form.oprof</field>
+        <field name="model">ir.cron</field>
+        <field name="inherit_id" ref="base.ir_cron_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='method_direct_trigger']" position="after">
+                <button name="action_oprof_run_recorded" type="object" string="Run Manually (record)"
+                        invisible="state != 'code'" groups="base.group_system"
+                        help="vscodetool: run now and mark the run, so it can be profiled and debugged in VS Code"/>
+                <button name="action_oprof_arm" type="object" string="Record next scheduled run"
+                        invisible="oprof_armed" groups="base.group_system"/>
+            </xpath>
+            <field name="priority" position="after">
+                <field name="oprof_armed" groups="base.group_system"/>
+                <field name="oprof_max_batches" groups="base.group_system"/>
+            </field>
+        </field>
+    </record>
+</odoo>

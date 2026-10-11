@@ -1,0 +1,8 @@
+src/**
+test/**
+scripts/**
+dist-test/**
+node_modules/**
+tsconfig.json
+**/*.map
+**/__pycache__/**

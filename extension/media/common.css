@@ -1,0 +1,35 @@
+:root {
+  --fg: var(--vscode-foreground);
+  --muted: var(--vscode-descriptionForeground);
+  --bg: var(--vscode-editor-background);
+  --panel: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  --border: var(--vscode-panel-border, var(--vscode-widget-border, #8884));
+  --accent: var(--vscode-textLink-foreground);
+  --hover: var(--vscode-list-hoverBackground);
+  --selected: var(--vscode-list-activeSelectionBackground);
+  --selected-fg: var(--vscode-list-activeSelectionForeground);
+  --warn: var(--vscode-editorWarning-foreground, #cca700);
+  --error: var(--vscode-editorError-foreground, #f14c4c);
+  --ok: var(--vscode-testing-iconPassed, #73c991);
+  --mono: var(--vscode-editor-font-family, monospace);
+}
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size, 13px); }
+a, .link { color: var(--accent); cursor: pointer; text-decoration: none; }
+a:hover, .link:hover { text-decoration: underline; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--mono); font-size: var(--vscode-editor-font-size, 12px); }
+button, select, input[type=text], input[type=search], input[type=number] {
+  font: inherit; color: var(--vscode-input-foreground); background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, var(--border)); border-radius: 2px; padding: 3px 6px;
+}
+button { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); cursor: pointer; border: none; padding: 4px 10px; }
+button:hover { background: var(--vscode-button-secondaryHoverBackground); }
+button.primary { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+button.active { outline: 1px solid var(--vscode-focusBorder); }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { position: sticky; top: 0; background: var(--bg); font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr:hover td { background: var(--hover); }
+tr.selected td { background: var(--selected); color: var(--selected-fg); }
+.bar { height: 4px; background: var(--accent); opacity: 0.6; margin-top: 2px; }

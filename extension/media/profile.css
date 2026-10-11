@@ -1,0 +1,27 @@
+#app { padding: 0 16px 24px; }
+nav.tabs { position: sticky; top: 0; z-index: 2; background: var(--bg); display: flex; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+main { padding-top: 8px; }
+h2 { margin: 12px 0 2px; font-weight: 600; word-break: break-all; }
+h3 { margin: 20px 0 6px; font-weight: 600; }
+.actions { margin: 12px 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.card { border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; background: var(--panel); }
+.card.link-card { cursor: pointer; }
+.card.link-card:hover { border-color: var(--vscode-focusBorder); }
+.card .value { font-size: 1.4em; font-weight: 600; margin: 2px 0; }
+.toolbar { display: flex; gap: 6px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+.toolbar input { min-width: 240px; }
+.stack { padding: 4px 0 6px 12px; border-left: 2px solid var(--border); }
+.stack > div { padding: 1px 0; }
+.src { color: var(--muted); margin-left: 8px; }
+tr.expandable { cursor: pointer; }
+td.warn { color: var(--warn); }
+td.err { color: var(--error); }
+tr.n1 td:first-child { color: var(--warn); font-weight: 600; }
+td.key, td.fields { max-width: 420px; overflow-wrap: anywhere; }
+button.mini { white-space: nowrap; padding: 0 8px; font-size: 0.85em; border-radius: 3px; color: var(--vscode-foreground);
+  background: color-mix(in srgb, var(--vscode-button-background) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vscode-button-background) 55%, transparent); }
+button.mini:hover { background: color-mix(in srgb, var(--vscode-button-background) 40%, transparent); }
+td.explain { width: 1%; }
+.note { margin: 6px 0 10px; max-width: 900px; }

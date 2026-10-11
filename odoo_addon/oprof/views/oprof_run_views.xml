@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="oprof_run_view_list" model="ir.ui.view">
+        <field name="name">oprof.run.list</field>
+        <field name="model">oprof.run</field>
+        <field name="arch" type="xml">
+            <list create="false" decoration-danger="error">
+                <header>
+                    <button name="action_export" type="object" string="Download (.oprof.json)"
+                            help="The selected runs as one file, for the VS Code extension's &quot;Open recording or profile file&quot;"/>
+                </header>
+                <field name="start_datetime" string="Started"/>
+                <field name="kind"/>
+                <field name="name"/>
+                <field name="user_id" optional="show"/>
+                <field name="group_id" optional="show"/>
+                <field name="duration" string="Duration (s)"/>
+                <field name="sql_count" string="Queries"/>
+                <field name="entry_count" optional="hide"/>
+                <field name="error" column_invisible="1"/>
+                <!-- on each recording session's row: plain buttons, the same on every version -->
+                <groupby name="group_id">
+                    <button name="action_open" type="object" string="Edit" class="btn-secondary"/>
+                    <button name="action_export" type="object" string="Download (.oprof.json)" class="btn-secondary"/>
+                </groupby>
+            </list>
+        </field>
+    </record>
+
+    <record id="oprof_run_view_form" model="ir.ui.view">
+        <field name="name">oprof.run.form</field>
+        <field name="model">oprof.run</field>
+        <field name="arch" type="xml">
+            <form create="false">
+                <header>
+                    <button name="action_export" type="object" string="Download (.oprof.json)"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="kind" readonly="1"/>
+                            <field name="start_datetime" string="Started"/>
+                            <field name="duration" readonly="1"/>
+                            <field name="sql_count"/>
+                            <field name="user_id" readonly="1"/>
+                            <field name="cron_id" readonly="1" invisible="kind != 'cron'"/>
+                            <field name="max_batches" readonly="1" invisible="kind != 'cron'"/>
+                        </group>
+                        <group>
+                            <field name="profile_id" readonly="1"/>
+                            <field name="run_uuid"/>
+                            <field name="pid" readonly="1"/>
+                            <field name="thread_name" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="error" readonly="1" invisible="not error"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="oprof_run_group_view_form" model="ir.ui.view">
+        <field name="name">oprof.run.group.form</field>
+        <field name="model">oprof.run.group</field>
+        <field name="arch" type="xml">
+            <form create="false">
+                <header>
+                    <button name="action_export" type="object" string="Download (.oprof.json)" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Recording session"/>
+                        <h1><field name="name" placeholder="Name this recording"/></h1>
+                    </div>
+                    <group>
+                        <field name="user_id" readonly="1"/>
+                        <field name="uuid" readonly="1"/>
+                    </group>
+                    <field name="run_ids" readonly="1">
+                        <list>
+                            <field name="start_datetime" string="Started"/>
+                            <field name="name"/>
+                            <field name="duration" string="Duration (s)"/>
+                            <field name="sql_count" string="Queries"/>
+                            <field name="replay_status"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="oprof_run_view_search" model="ir.ui.view">
+        <field name="name">oprof.run.search</field>
+        <field name="model">oprof.run</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="url"/>
+                <field name="user_id"/>
+                <field name="group_id"/>
+                <filter string="HTTP requests" name="http" domain="[('kind', '=', 'http')]"/>
+                <filter string="Cron runs" name="cron" domain="[('kind', '=', 'cron')]"/>
+                <separator/>
+                <filter string="Failed" name="failed" domain="[('error', '!=', False)]"/>
+                <group>
+                    <filter string="Recording session" name="groupby_group" domain="[]" context="{'group_by': 'group_id'}"/>
+                    <filter string="User" name="groupby_user" domain="[]" context="{'group_by': 'user_id'}"/>
+                    <filter string="Kind" name="groupby_kind" domain="[]" context="{'group_by': 'kind'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- a recording session (or any runs picked) as one file: the extension opens it -->
+    <record id="oprof_run_action_export" model="ir.actions.server">
+        <field name="name">Download (.oprof.json)</field>
+        <field name="model_id" ref="model_oprof_run"/>
+        <field name="binding_model_id" ref="model_oprof_run"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_export()</field>
+    </record>
+
+    <record id="oprof_run_action" model="ir.actions.act_window">
+        <field name="name">vscodetool runs</field>
+        <field name="res_model">oprof.run</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="oprof_run_view_search"/>
+        <field name="context">{'search_default_groupby_group': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No marked run yet</p>
+            <p>Use the oprof systray button, the VS Code command "oprof: Record next request",
+               or "Run Manually (record)" on a scheduled action.</p>
+        </field>
+    </record>
+
+    <menuitem id="oprof_run_menu" name="vscodetool runs" action="oprof_run_action"
+              parent="base.next_id_9" sequence="99"/>
+</odoo>

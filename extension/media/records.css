@@ -1,0 +1,121 @@
+html, body { height: 100%; overflow: hidden; }
+#app { height: 100%; display: flex; flex-direction: column; }
+.toolbar { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.toolbar input[type=search] { min-width: 240px; }
+.toolbar .kind { text-transform: capitalize; }
+.toolbar .kind.created { border-left: 3px solid var(--ok); }
+.toolbar .kind.changed { border-left: 3px solid var(--accent); }
+.toolbar .kind.deleted { border-left: 3px solid var(--error); }
+.split { flex: 1; display: flex; min-height: 0; }
+#list { width: clamp(170px, 30%, 320px); flex: none; overflow: auto; border-right: 1px solid var(--border); padding-bottom: 16px; }
+#inspector, #timeline { flex: 1; overflow: auto; padding: 0 16px 24px; }
+.empty { padding: 16px; }
+.small { font-size: 0.9em; }
+.note { margin: 10px 0; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* the list: records by model, a model's records fold */
+.model { position: sticky; top: 0; background: var(--panel); padding: 6px 10px; font-weight: 600; border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; }
+.model:hover { background: var(--hover); }
+.model .tw { display: inline-block; width: 1.1em; color: var(--muted); }
+.model .count { float: right; color: var(--muted); font-weight: normal; }
+.rec { padding: 4px 10px 4px 14px; cursor: pointer; border-left: 3px solid transparent; }
+.rec:hover { background: var(--hover); }
+.rec.selected { background: var(--selected); color: var(--selected-fg); }
+.rec.created { border-left-color: var(--ok); }
+.rec.changed { border-left-color: var(--accent); }
+.rec.deleted { border-left-color: var(--error); }
+.rec .line { display: flex; gap: 6px; align-items: baseline; }
+.rec .line .mono { flex: 1; }
+.rec .name { font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec .right { color: var(--muted); white-space: nowrap; }
+
+.badge { display: inline-block; font-size: 0.8em; padding: 0 6px; margin-left: 6px; border-radius: 8px; border: 1px solid; }
+.badge.created { color: var(--ok); }
+.badge.changed { color: var(--accent); }
+.badge.deleted { color: var(--error); }
+
+/* the inspector's head: the record, when created or deleted, and by what */
+.head { padding: 8px 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.head h2 { margin: 0 0 4px; font-weight: 600; word-break: break-all; }
+.event { margin-top: 4px; }
+.event.created { color: var(--ok); }
+.event.deleted { color: var(--error); }
+.event .link { color: var(--accent); }
+.legend { display: flex; gap: 14px; align-items: center; margin: 2px 0 6px; }
+.legend > span[class*="k-"] { color: var(--k); }
+.legend > span[class*="k-"]::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px;
+  vertical-align: -1px; background: var(--k); }
+
+/* values */
+table.fields th { cursor: default; }
+table.fields td { vertical-align: top; }
+.fname { font-weight: 600; }
+td.chain { overflow-wrap: break-word; }
+td.chain .step { display: inline-block; }
+td.chain .arrow { color: var(--muted); }
+/* the arrow between a field's values: always yellow, to see the changes at a glance */
+.arrow, td.chain .arrow { color: var(--vscode-charts-yellow, #e2c541) !important; font-weight: 700; }
+.chip { display: inline-block; padding: 0 6px; border-radius: 3px; background: var(--hover); border: 1px solid var(--border); margin: 1px 0; }
+.chip.link { cursor: pointer; }
+.chip .sub { font-family: var(--vscode-font-family); font-size: 0.9em; }
+.chip.req { font-size: 0.85em; white-space: nowrap; }
+.bool.on { color: var(--ok); }
+.stack { padding: 4px 0 6px 12px; border-left: 2px solid var(--border); }
+.src { color: var(--muted); margin-left: 8px; }
+
+/* the field's call stack and record graph: quiet until the row is hovered */
+.graphs { display: inline-flex; gap: 2px; }
+button.act { white-space: nowrap; padding: 0 6px; font-size: 0.85em; line-height: 1.5; border-radius: 3px; background: transparent;
+  color: var(--muted); border: 1px solid transparent; opacity: 0.55; }
+tr:hover button.act { opacity: 1; border-color: var(--border); }
+button.act:hover { color: var(--fg); background: var(--hover); border-color: var(--accent) !important; }
+
+/* compact tables (fields, timeline): one line per change, the values readable, a click opens the code */
+/* fixed columns, the values taking the rest: never squeezed to a letter per line (a narrow
+   panel scrolls sideways instead) */
+table.compact { table-layout: fixed; min-width: 1000px; }
+table.compact.timeline { min-width: 1080px; }
+table.compact.timeline.with-runs { min-width: 1270px; }
+table.compact td.reqcell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+table.compact td.reqcell .chip.req { display: inline; }
+table.compact th { font-weight: 600; color: var(--muted); }
+table.compact td { padding: 3px 8px; vertical-align: baseline; }
+table.compact tbody tr[data-gofile] { cursor: pointer; }
+table.compact td.chain { font-size: 14px; line-height: 1.5; }
+table.compact td.chain .step { display: inline; }
+table.compact td.chain .chip { display: inline; padding: 1px 6px; font-size: 13px; line-height: 1.9; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+table.compact .fcell, table.compact .reccell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+table.compact .fname { font-size: 13px; }
+/* the field's name, its type under it */
+table.compact .fcell .fname, table.compact .fcell .ftype { display: block; overflow: hidden; text-overflow: ellipsis; line-height: 1.45; padding-bottom: 1px; }
+table.compact .ftype { font-size: 11px; line-height: 1.3; }
+table.compact td.by { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+table.compact td.by .stack, table.compact tr.history td.by { white-space: normal; }
+table.compact td.acts { width: 1%; white-space: nowrap; text-align: right; }
+table.compact .count.link { white-space: nowrap; }
+
+/* fields by what the run did: set at create, updated, record deleted */
+.k-created { --k: var(--ok); }
+.k-updated { --k: var(--accent); }
+.k-deleted { --k: var(--error); }
+tr.field { cursor: pointer; }
+tr.field[class*="k-"] > td { background: color-mix(in srgb, var(--k) 5%, transparent); }
+tr.field[class*="k-"]:hover > td { background: color-mix(in srgb, var(--k) 13%, transparent); }
+tr.field[class*="k-"] > td:first-child { box-shadow: inset 3px 0 0 var(--k); }
+tr.field[class*="k-"] .fname { color: var(--k); }
+tr.history > td { padding: 2px 8px; background: color-mix(in srgb, var(--k) 3%, transparent); border-bottom: 1px dashed var(--border); }
+tr.history > td:first-child { padding-left: 24px; box-shadow: inset 3px 0 0 color-mix(in srgb, var(--k) 45%, transparent); }
+
+/* timeline: one colour per record, the minimap on its right */
+tr.byrec > td { background: color-mix(in srgb, var(--rec) 7%, transparent); }
+tr.byrec:hover > td { background: color-mix(in srgb, var(--rec) 16%, transparent); }
+tr.byrec > td:first-child { border-left: 4px solid var(--rec); }
+tr.byrec .reclabel { color: var(--rec); font-weight: 600; }
+#minimap { width: 90px; flex: none; border-left: 1px solid var(--border); cursor: pointer; background: color-mix(in srgb, var(--fg) 3%, var(--bg)); }
+h2 button.act { opacity: 1; border-color: var(--border); vertical-align: middle; font-family: var(--vscode-font-family); font-weight: normal; }
+/* a change of a field, in a session: its number, its request under it, cut to the column */
+table.compact tr.history td.hstep { text-align: left; overflow: hidden; }
+table.compact tr.history td.hstep > span, table.compact tr.history td.hstep .chip.req { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-sizing: border-box; }
+table.compact tr.history td.hstep .chip.req { margin-top: 2px; }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- the access rules: ir.model.access up to saas~19.x, ir.access on 20.0 (a CSV can't be both) -->
+    <function model="oprof.run" name="_oprof_install_access"/>
+</odoo>

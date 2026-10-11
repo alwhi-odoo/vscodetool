@@ -1,0 +1,474 @@
+diff --git a/src/app-state/color-scheme.ts b/src/app-state/color-scheme.ts
+index 8fb6e27..72b87a7 100644
+--- a/src/app-state/color-scheme.ts
++++ b/src/app-state/color-scheme.ts
+@@ -1,4 +1,5 @@
+ import {Atom} from '../lib/atom'
++import {isVSCode, vscodeBodyPrefersDark, watchVSCodeTheme} from '../vscode'
+ 
+ export const enum ColorScheme {
+   // Default: respect prefers-color-schema
+@@ -14,6 +15,10 @@ export const enum ColorScheme {
+ const localStorageKey = 'speedscope-color-scheme'
+ 
+ function getStoredPreference(): ColorScheme {
++  // Inside VS Code, follow the editor theme instead of the stored preference.
++  if (isVSCode) {
++    return vscodeBodyPrefersDark() ? ColorScheme.DARK : ColorScheme.LIGHT
++  }
+   const storedPreference = window.localStorage && window.localStorage[localStorageKey]
+   if (storedPreference === 'DARK') {
+     return ColorScheme.DARK
+@@ -70,8 +75,13 @@ class ColorSchemeAtom extends Atom<ColorScheme> {
+ 
+ export const colorSchemeAtom = new ColorSchemeAtom(getStoredPreference(), 'colorScheme')
+ 
++watchVSCodeTheme(dark => {
++  colorSchemeAtom.set(dark ? ColorScheme.DARK : ColorScheme.LIGHT)
++})
++
+ colorSchemeAtom.subscribe(() => {
+   const value = colorSchemeAtom.get()
++  if (isVSCode) return value
+ 
+   switch (value) {
+     case ColorScheme.DARK: {
+diff --git a/src/app-state/getters.ts b/src/app-state/getters.ts
+index c5f1ead..87fd5bc 100644
+--- a/src/app-state/getters.ts
++++ b/src/app-state/getters.ts
+@@ -1,4 +1,5 @@
+ import {Frame, Profile} from '../lib/profile'
++import {DB_BUCKET, highlight, MODULE_BUCKET} from '../vscode'
+ import {memoizeByReference, memoizeByShallowEquality} from '../lib/utils'
+ import {RowAtlas} from '../gl/row-atlas'
+ import {CanvasContext} from '../gl/canvas-context'
+@@ -61,7 +62,16 @@ export const getFrameToColorBucket = memoizeByReference(
+     frames.sort(compare)
+     const frameToColorBucket = new Map<string | number, number>()
+     for (let i = 0; i < frames.length; i++) {
+-      frameToColorBucket.set(frames[i].key, Math.floor((255 * i) / frames.length))
++      // oprof: 254 and 255 are kept for highlighted code (see vscode.ts)
++      const key = frames[i].key
++      frameToColorBucket.set(
++        key,
++        highlight.db.has(key)
++          ? DB_BUCKET
++          : highlight.module.has(key)
++            ? MODULE_BUCKET
++            : Math.floor((254 * i) / frames.length),
++      )
+     }
+ 
+     return frameToColorBucket
+diff --git a/src/views/application.tsx b/src/views/application.tsx
+index be24242..1c54292 100644
+--- a/src/views/application.tsx
++++ b/src/views/application.tsx
+@@ -20,6 +20,7 @@ import {ProfileGroupState} from '../app-state/profile-group'
+ import {HashParams} from '../lib/hash-params'
+ import {StatelessComponent} from '../lib/preact-helpers'
+ import {SandwichViewContainer} from './sandwich-view'
++import {isVSCode, postToHost, setHighlight} from '../vscode'
+ 
+ const importModule = import('../import')
+ 
+@@ -170,12 +171,16 @@ export type ApplicationProps = {
+ }
+ 
+ export class Application extends StatelessComponent<ApplicationProps> {
+-  private async loadProfile(loader: () => Promise<ProfileGroup | null>) {
++  // Returns null on success, or an error message (oprof/VS Code).
++  private async loadProfile(loader: () => Promise<ProfileGroup | null>): Promise<string | null> {
+     this.props.setError(false)
+     this.props.setLoading(true)
+     await new Promise(resolve => setTimeout(resolve, 0))
+ 
+-    if (!this.props.glCanvas) return
++    if (!this.props.glCanvas) {
++      this.props.setLoading(false)
++      return 'WebGL canvas is not available'
++    }
+ 
+     console.time('import')
+ 
+@@ -185,18 +190,20 @@ export class Application extends StatelessComponent<ApplicationProps> {
+     } catch (e) {
+       console.log('Failed to load format', e)
+       this.props.setError(true)
+-      return
++      return `Failed to load profile: ${e instanceof Error ? e.message : String(e)}`
+     }
+ 
+     // TODO(jlfwong): Make these into nicer overlays
+     if (profileGroup == null) {
+-      alert('Unrecognized format! See documentation about supported formats.')
++      const message = 'Unrecognized format! See documentation about supported formats.'
++      if (!isVSCode) alert(message)
+       this.props.setLoading(false)
+-      return
++      return message
+     } else if (profileGroup.profiles.length === 0) {
+-      alert("Successfully imported profile, but it's empty!")
++      const message = "Successfully imported profile, but it's empty!"
++      if (!isVSCode) alert(message)
+       this.props.setLoading(false)
+-      return
++      return message
+     }
+ 
+     if (this.props.hashParams.title) {
+@@ -224,6 +231,36 @@ export class Application extends StatelessComponent<ApplicationProps> {
+ 
+     this.props.setProfileGroup(profileGroup)
+     this.props.setLoading(false)
++    return null
++  }
++
++  // oprof/VS Code: profiles are pushed by the extension host.
++  private onHostMessage = async (ev: MessageEvent) => {
++    const msg = ev.data
++    if (!msg || typeof msg !== 'object' || msg.type !== 'load') return
++    const name: string = typeof msg.name === 'string' && msg.name ? msg.name : 'profile'
++    const data: string = msg.data
++    let error: string | null
++    try {
++      if (typeof data !== 'string') throw new Error('load message without string data')
++      // before the import: the colour buckets are computed for each profile loaded
++      setHighlight(msg.highlight)
++      error = await this.loadProfile(() => importProfilesFromText(name, data))
++    } catch (e) {
++      error = e instanceof Error ? e.message : String(e)
++    }
++    postToHost(error == null ? {type: 'loaded'} : {type: 'error', message: error})
++  }
++
++  private postedReady = false
++  private maybePostReady() {
++    if (!isVSCode || this.postedReady || !this.props.glCanvas) return
++    this.postedReady = true
++    postToHost({type: 'ready'})
++  }
++
++  componentDidUpdate() {
++    this.maybePostReady()
+   }
+ 
+   getStyle(): ReturnType<typeof getStyle> {
+@@ -389,6 +426,8 @@ export class Application extends StatelessComponent<ApplicationProps> {
+   }
+ 
+   private onWindowKeyDown = async (ev: KeyboardEvent) => {
++    // In VS Code, Ctrl/Cmd+S and Ctrl/Cmd+O belong to the editor.
++    if (isVSCode) return
+     // This has to be handled on key down in order to prevent the default
+     // page save action.
+     if (ev.key === 's' && (ev.ctrlKey || ev.metaKey)) {
+@@ -418,13 +457,19 @@ export class Application extends StatelessComponent<ApplicationProps> {
+     window.addEventListener('keydown', this.onWindowKeyDown)
+     window.addEventListener('keypress', this.onWindowKeyPress)
+     document.addEventListener('paste', this.onDocumentPaste)
+-    this.maybeLoadHashParamProfile()
++    if (isVSCode) {
++      window.addEventListener('message', this.onHostMessage)
++      this.maybePostReady()
++    } else {
++      this.maybeLoadHashParamProfile()
++    }
+   }
+ 
+   componentWillUnmount() {
+     window.removeEventListener('keydown', this.onWindowKeyDown)
+     window.removeEventListener('keypress', this.onWindowKeyPress)
+     document.removeEventListener('paste', this.onDocumentPaste)
++    window.removeEventListener('message', this.onHostMessage)
+   }
+ 
+   async maybeLoadHashParamProfile() {
+@@ -483,7 +528,9 @@ export class Application extends StatelessComponent<ApplicationProps> {
+             </a>{' '}
+             visualizer. Use it to help you make your software faster.
+           </p>
+-          {canUseXHR ? (
++          {isVSCode ? (
++            <p className={css(style.landingP)}>Waiting for the profile from VS Code…</p>
++          ) : canUseXHR ? (
+             <p className={css(style.landingP)}>
+               Drag and drop a profile file onto this window to get started, click the big blue
+               button below to browse for a profile to explore, or{' '}
+@@ -498,7 +545,7 @@ export class Application extends StatelessComponent<ApplicationProps> {
+               button below to browse for a profile to explore.
+             </p>
+           )}
+-          <div className={css(style.browseButtonContainer)}>
++          <div className={css(style.browseButtonContainer, isVSCode && style.hide)}>
+             <input
+               type="file"
+               name="file"
+diff --git a/src/views/flamechart-detail-view.tsx b/src/views/flamechart-detail-view.tsx
+index d350106..6b7fdca 100644
+--- a/src/views/flamechart-detail-view.tsx
++++ b/src/views/flamechart-detail-view.tsx
+@@ -1,4 +1,5 @@
+ import {StyleDeclarationValue, css} from 'aphrodite'
++import {postFrame} from '../vscode'
+ import {h, JSX} from 'preact'
+ import {getFlamechartStyle} from './flamechart-style'
+ import {formatPercent} from '../lib/utils'
+@@ -76,7 +77,24 @@ function StackTraceView(props: StackTraceViewProps) {
+           pos += `:${frame.col}`
+         }
+       }
+-      row.push(<span className={css(style.stackFileLine)}> ({pos})</span>)
++      const clickedFrame = frame
++      row.push(
++        <span className={css(style.stackFileLine)}>
++          {' ('}
++          <a
++            href="#"
++            className={css(style.stackFileLink)}
++            title="Open source (Shift+click: jump debugger)"
++            onClick={(ev: MouseEvent) => {
++              ev.preventDefault()
++              postFrame(ev.shiftKey ? 'frameDblClick' : 'openFrame', clickedFrame, ev.altKey)
++            }}
++          >
++            {pos}
++          </a>
++          {')'}
++        </span>,
++      )
+     }
+     rows.push(<div className={css(style.stackLine)}>{row}</div>)
+   }
+diff --git a/src/views/flamechart-pan-zoom-view.tsx b/src/views/flamechart-pan-zoom-view.tsx
+index 78e7cf1..58e4332 100644
+--- a/src/views/flamechart-pan-zoom-view.tsx
++++ b/src/views/flamechart-pan-zoom-view.tsx
+@@ -1,4 +1,5 @@
+ import {Rect, AffineTransform, Vec2, clamp} from '../lib/math'
++import {postFrame} from '../vscode'
+ import {CallTreeNode} from '../lib/profile'
+ import {Flamechart, FlamechartFrame} from '../lib/flamechart'
+ import {CanvasContext} from '../gl/canvas-context'
+@@ -602,8 +603,17 @@ export class FlamechartPanZoomView extends Component<FlamechartPanZoomViewProps,
+     }
+ 
+     if (this.hoveredLabel) {
++      const {frame} = this.hoveredLabel.node
+       this.props.onNodeSelect(this.hoveredLabel.node)
+       this.renderCanvas()
++      // oprof/VS Code: Ctrl/Cmd+click opens the frame's source; Shift+click
++      // asks the host to jump the debugger (plain double-click stays
++      // speedscope's zoom-to-frame).
++      if (ev.ctrlKey || ev.metaKey) {
++        postFrame('openFrame', frame, ev.altKey)
++      } else if (ev.shiftKey) {
++        postFrame('frameDblClick', frame, ev.altKey)
++      }
+     } else {
+       this.props.onNodeSelect(null)
+     }
+diff --git a/src/views/flamechart-style.ts b/src/views/flamechart-style.ts
+index ba97182..f38c6ff 100644
+--- a/src/views/flamechart-style.ts
++++ b/src/views/flamechart-style.ts
+@@ -60,6 +60,15 @@ export const getFlamechartStyle = withTheme(theme =>
+     stackFileLine: {
+       color: theme.fgSecondaryColor,
+     },
++    stackFileLink: {
++      color: theme.fgSecondaryColor,
++      textDecoration: 'none',
++      cursor: 'pointer',
++      ':hover': {
++        color: theme.selectionPrimaryColor,
++        textDecoration: 'underline',
++      },
++    },
+     statsTable: {
+       display: 'grid',
+       gridTemplateColumns: '1fr 1fr',
+diff --git a/src/views/themes/dark-theme.ts b/src/views/themes/dark-theme.ts
+index eb091b7..c784cde 100644
+--- a/src/views/themes/dark-theme.ts
++++ b/src/views/themes/dark-theme.ts
+@@ -26,6 +26,9 @@ const L_0 = 0.2
+ const L_d = 0.1
+ 
+ const colorForBucket = (t: number) => {
++  // oprof: bucket 255 (t = 1) the database's code, 254 custom modules (see vscode.ts)
++  if (t > 0.998) return Color.fromCSSHex('#B5389E')
++  if (t > 0.994) return Color.fromCSSHex('#B78A12')
+   const x = triangle(30.0 * t)
+   const H = 360.0 * (0.9 * t)
+   const C = C_0 + C_d * x
+@@ -34,6 +37,8 @@ const colorForBucket = (t: number) => {
+ }
+ const colorForBucketGLSL = `
+   vec3 colorForBucket(float t) {
++    if (t > 0.998) return vec3(0.71, 0.22, 0.62);
++    if (t > 0.994) return vec3(0.72, 0.54, 0.07);
+     float x = triangle(30.0 * t);
+     float H = 360.0 * (0.9 * t);
+     float C = ${C_0.toFixed(1)} + ${C_d.toFixed(1)} * x;
+diff --git a/src/views/themes/light-theme.ts b/src/views/themes/light-theme.ts
+index af19c44..2d7a438 100644
+--- a/src/views/themes/light-theme.ts
++++ b/src/views/themes/light-theme.ts
+@@ -26,6 +26,9 @@ const L_0 = 0.8
+ const L_d = 0.15
+ 
+ const colorForBucket = (t: number) => {
++  // oprof: bucket 255 (t = 1) the database's code, 254 custom modules (see vscode.ts)
++  if (t > 0.998) return Color.fromCSSHex('#F28AD6')
++  if (t > 0.994) return Color.fromCSSHex('#F5C542')
+   const x = triangle(30.0 * t)
+   const H = 360.0 * (0.9 * t)
+   const C = C_0 + C_d * x
+@@ -34,6 +37,8 @@ const colorForBucket = (t: number) => {
+ }
+ const colorForBucketGLSL = `
+   vec3 colorForBucket(float t) {
++    if (t > 0.998) return vec3(0.95, 0.54, 0.84);
++    if (t > 0.994) return vec3(0.96, 0.77, 0.26);
+     float x = triangle(30.0 * t);
+     float H = 360.0 * (0.9 * t);
+     float C = ${C_0.toFixed(1)} + ${C_d.toFixed(1)} * x;
+diff --git a/src/views/toolbar.tsx b/src/views/toolbar.tsx
+index a47372c..24e597a 100644
+--- a/src/views/toolbar.tsx
++++ b/src/views/toolbar.tsx
+@@ -12,6 +12,7 @@ import {viewModeAtom} from '../app-state'
+ import {ProfileGroupState} from '../app-state/profile-group'
+ import {colorSchemeAtom} from '../app-state/color-scheme'
+ import {useAtom} from '../lib/atom'
++import {highlight, isVSCode, DB_BUCKET, MODULE_BUCKET} from '../vscode'
+ 
+ interface ToolbarProps extends ApplicationProps {
+   browseForFile(): void
+@@ -192,10 +193,42 @@ function ToolbarRightContent(props: ToolbarProps) {
+     </div>
+   )
+ 
++  // oprof: what the highlighted colours are (only when there are some)
++  const theme = useTheme()
++  const swatch = (bucket: number) => (
++    <span
++      style={{
++        display: 'inline-block',
++        width: 10,
++        height: 10,
++        marginRight: 4,
++        borderRadius: 2,
++        verticalAlign: -1,
++        background: theme.colorForBucket(bucket / 255).toCSS(),
++      }}
++    />
++  )
++  const legend =
++    highlight.db.size || highlight.module.size ? (
++      <div className={css(style.toolbarTab)} title="Code people wrote: frames in these colours">
++        {highlight.db.size ? (
++          <span style={{marginRight: 8}}>
++            {swatch(DB_BUCKET)}code in the database
++          </span>
++        ) : null}
++        {highlight.module.size ? (
++          <span>
++            {swatch(MODULE_BUCKET)}custom modules
++          </span>
++        ) : null}
++      </div>
++    ) : null
++
+   return (
+     <div className={css(style.toolbarRight)}>
+-      {props.activeProfileState && exportFile}
+-      {importFile}
++      {legend}
++      {!isVSCode && props.activeProfileState && exportFile}
++      {!isVSCode && importFile}
+       {colorSchemeToggle}
+       {help}
+     </div>
+diff --git a/src/vscode.ts b/src/vscode.ts
+new file mode 100644
+index 0000000..a628568
+--- /dev/null
++++ b/src/vscode.ts
+@@ -0,0 +1,74 @@
++// Glue for running speedscope inside a VS Code webview (oprof extension).
++//
++// Host -> webview:  {type: 'load', name: string, data: string, highlight?: {db: number[], module: number[]}}
++// Webview -> host:  {type: 'ready'}
++//                   {type: 'loaded'}
++//                   {type: 'error', message: string}
++//                   {type: 'openFrame' | 'frameDblClick', name, file, line, col, key, alt}
++
++import {Frame} from './lib/profile'
++
++interface VSCodeApi {
++  postMessage(message: any): void
++}
++
++declare const acquireVsCodeApi: (() => VSCodeApi) | undefined
++
++// acquireVsCodeApi() may only be called once per webview.
++const api: VSCodeApi | null =
++  typeof acquireVsCodeApi === 'function' ? (acquireVsCodeApi as () => VSCodeApi)() : null
++
++export const isVSCode = api != null
++
++export function postToHost(message: any) {
++  if (api) api.postMessage(message)
++}
++
++// oprof: frames drawn in their own colour, by key (their index in the file's frames): code
++// stored in the database (server actions, crons, Studio computes), and custom modules' code.
++export const highlight = {db: new Set<number | string>(), module: new Set<number | string>()}
++
++export function setHighlight(h: {db?: (number | string)[]; module?: (number | string)[]} | undefined) {
++  highlight.db = new Set(h && h.db ? h.db : [])
++  highlight.module = new Set(h && h.module ? h.module : [])
++}
++
++// The colour buckets: 0-253 for the others, 254 custom modules, 255 the database's code.
++export const MODULE_BUCKET = 254
++export const DB_BUCKET = 255
++
++export type FrameMessageType = 'openFrame' | 'frameDblClick'
++
++export function postFrame(type: FrameMessageType, frame: Frame, alt: boolean) {
++  postToHost({
++    type,
++    name: frame.name,
++    file: frame.file,
++    line: frame.line,
++    col: frame.col,
++    key: frame.key,
++    alt,
++  })
++}
++
++// Theme: VS Code sets vscode-light / vscode-dark / vscode-high-contrast
++// (and vscode-high-contrast-light) on <body>. Anything that isn't explicitly
++// light is treated as dark.
++export function vscodeBodyPrefersDark(): boolean {
++  const cl = document.body ? document.body.classList : null
++  if (!cl) return true
++  if (cl.contains('vscode-light') || cl.contains('vscode-high-contrast-light')) return false
++  return true
++}
++
++export function watchVSCodeTheme(onChange: (dark: boolean) => void) {
++  if (!isVSCode || !document.body || typeof MutationObserver === 'undefined') return
++  let last = vscodeBodyPrefersDark()
++  new MutationObserver(() => {
++    const dark = vscodeBodyPrefersDark()
++    if (dark !== last) {
++      last = dark
++      onChange(dark)
++    }
++  }).observe(document.body, {attributes: true, attributeFilter: ['class']})
++}

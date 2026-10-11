@@ -1,0 +1,25 @@
+#app { padding: 0 16px 24px; }
+.toolbar { display: flex; gap: 6px; align-items: center; padding: 10px 0; flex-wrap: wrap; position: sticky; top: 0; background: var(--bg); z-index: 2; border-bottom: 1px solid var(--border); }
+.toolbar .sep { width: 12px; }
+.toolbar .note { margin-left: auto; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin: 12px 0; }
+.card { border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; background: var(--panel); }
+.card .value { font-size: 1.3em; font-weight: 600; margin-top: 2px; }
+.card .value.small { font-size: 1em; font-weight: normal; }
+h3.expandable { cursor: pointer; margin: 14px 0 6px; font-weight: 600; user-select: none; }
+pre.query { white-space: pre-wrap; overflow-wrap: anywhere; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); max-height: 260px; overflow: auto; margin: 0 0 12px; }
+table.plan th { cursor: default; }
+table.plan td.node { white-space: nowrap; }
+table.plan .tree { color: var(--muted); white-space: pre; }
+table.plan tr.expandable { cursor: pointer; }
+table.plan tr.details td { padding: 2px 8px 8px 8px; }
+table.plan tr.details .indent { display: inline-block; white-space: pre; color: transparent; }
+table.plan tr.details div { padding-left: 24px; overflow-wrap: anywhere; }
+td.warn { color: var(--warn); }
+td.bad { color: var(--error); font-weight: 600; }
+pre.query .sql-keyword { color: var(--vscode-symbolIcon-keywordForeground, #569cd6); font-weight: 600; }
+pre.query .sql-string { color: var(--vscode-debugTokenExpression-string, #ce9178); }
+pre.query .sql-number { color: var(--vscode-debugTokenExpression-number, #b5cea8); }
+pre.query .sql-ident { color: var(--vscode-symbolIcon-fieldForeground, #9cdcfe); }
+pre.query .sql-function { color: var(--vscode-symbolIcon-functionForeground, #dcdcaa); }
+pre.query .sql-comment { color: var(--vscode-descriptionForeground, #6a9955); font-style: italic; }

@@ -1,0 +1,786 @@
+{
+  "name": "oprof",
+  "displayName": "vscodetool: Odoo profiler and replay debugger",
+  "description": "Odoo profiler data, speedscope, call stack and cache views, and the VS Code debugger on recorded Odoo requests (replayed inside your Odoo server).",
+  "version": "0.1.47",
+  "publisher": "alwhi",
+  "license": "LGPL-3.0-only",
+  "private": true,
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Debuggers",
+    "Visualization"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onDebugResolve:oprof",
+    "onCustomEditor:oprof.speedscope"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "oprof",
+          "title": "vscodetool",
+          "icon": "media/oprof.svg"
+        }
+      ]
+    },
+    "views": {
+      "oprof": [
+        {
+          "id": "oprof.runs",
+          "name": "Runs",
+          "icon": "media/oprof.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "oprof.runs",
+        "contents": "Start Odoo (under the debugger), then mark a request or a cron run. Marked requests are profiled and recorded, so they can be replayed to your breakpoints.\n[Start Odoo](command:oprof.startServer)\n[Set up (Odoo checkout, venv)](command:oprof.setup)\n[Open a profile file…](command:oprof.openFile)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "oprof.setup",
+        "title": "Set up (Odoo checkout, venv, database)",
+        "category": "vscodetool"
+      },
+      {
+        "command": "oprof.startServer",
+        "title": "Start Odoo (with the debugger)",
+        "category": "vscodetool",
+        "icon": "$(record)"
+      },
+      {
+        "command": "oprof.stopServer",
+        "title": "Stop Odoo",
+        "category": "vscodetool",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "oprof.recordNextRequest",
+        "title": "Record next request",
+        "category": "vscodetool",
+        "icon": "$(circle-large-filled)"
+      },
+      {
+        "command": "oprof.recordUntilStopped",
+        "title": "Record every request until stopped",
+        "category": "vscodetool"
+      },
+      {
+        "command": "oprof.stopMarking",
+        "title": "Stop recording requests",
+        "category": "vscodetool"
+      },
+      {
+        "command": "oprof.recordCron",
+        "title": "Record cron…",
+        "category": "vscodetool",
+        "enablement": "oprof.serverRunning"
+      },
+      {
+        "command": "oprof.refreshRuns",
+        "title": "Refresh",
+        "category": "vscodetool",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "oprof.openFile",
+        "title": "Open profile file…",
+        "category": "vscodetool"
+      },
+      {
+        "command": "oprof.setSourceVersion",
+        "title": "Choose Odoo version…",
+        "category": "vscodetool",
+        "icon": "$(versions)"
+      },
+      {
+        "command": "oprof.openProfile",
+        "title": "Show profile",
+        "category": "vscodetool",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "oprof.openSpeedscope",
+        "title": "Show speedscope",
+        "category": "vscodetool",
+        "icon": "$(flame)"
+      },
+      {
+        "command": "oprof.openCallStack",
+        "title": "Show call stack",
+        "category": "vscodetool",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "oprof.openCache",
+        "title": "Show caches",
+        "category": "vscodetool",
+        "icon": "$(database)"
+      },
+      {
+        "command": "oprof.debugRun",
+        "title": "Debug this run (replay)",
+        "category": "vscodetool",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "oprof.debugRunFromStart",
+        "title": "Debug this run from the start (replay)",
+        "category": "vscodetool",
+        "icon": "$(debug-step-into)"
+      },
+      {
+        "command": "oprof.renameRun",
+        "title": "Rename…",
+        "category": "vscodetool",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "oprof.deleteRun",
+        "title": "Delete run",
+        "category": "vscodetool",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "oprof.deleteAllRuns",
+        "title": "Delete all runs",
+        "category": "vscodetool",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "oprof.openRecords",
+        "title": "Show record trace",
+        "category": "vscodetool",
+        "icon": "$(history)"
+      },
+      {
+        "command": "oprof.openGroupRecords",
+        "title": "Show record trace of the session",
+        "category": "vscodetool",
+        "icon": "$(history)"
+      },
+      {
+        "command": "oprof.renameGroup",
+        "title": "Rename…",
+        "category": "vscodetool",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "oprof.deleteGroup",
+        "title": "Delete session",
+        "category": "vscodetool",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "oprof.fetchProfiles",
+        "title": "Fetch profiles (Odoo's profiler, any database)",
+        "category": "vscodetool",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "oprof.hideProfileDatabase",
+        "title": "Hide this database",
+        "category": "vscodetool",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "oprof.deleteOdooProfiles",
+        "title": "Delete",
+        "category": "vscodetool",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "oprof.showCustomCode",
+        "title": "Show custom code (server actions, crons, computes)…",
+        "category": "vscodetool",
+        "icon": "$(code)"
+      },
+      {
+        "command": "oprof.searchRuns",
+        "title": "Search runs and profiles…",
+        "category": "vscodetool",
+        "icon": "$(search)"
+      },
+      {
+        "command": "oprof.openOprofFile",
+        "title": "Open recording or profile file…",
+        "category": "vscodetool",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "oprof.openSpeedscopeFile",
+        "title": "Open speedscope file…",
+        "category": "vscodetool",
+        "icon": "$(flame)"
+      },
+      {
+        "command": "oprof.debugGroup",
+        "title": "Debug the recording session (every request, in order)",
+        "category": "vscodetool",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "oprof.debugGroupFromStart",
+        "title": "Debug the recording session from the start of each request",
+        "category": "vscodetool",
+        "icon": "$(debug-step-into)"
+      },
+      {
+        "command": "oprof.importRecording",
+        "title": "Import a recording into a database (to replay it)…",
+        "category": "vscodetool",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "oprof.openDbGraph",
+        "title": "DB record graph…",
+        "category": "vscodetool",
+        "icon": "$(type-hierarchy)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "oprof.recordNextRequest",
+          "when": "view == oprof.runs",
+          "group": "navigation@1"
+        },
+        {
+          "command": "oprof.startServer",
+          "when": "view == oprof.runs && !oprof.serverRunning",
+          "group": "navigation@2"
+        },
+        {
+          "command": "oprof.stopServer",
+          "when": "view == oprof.runs && oprof.serverRunning",
+          "group": "navigation@2"
+        },
+        {
+          "command": "oprof.refreshRuns",
+          "when": "view == oprof.runs",
+          "group": "navigation@3"
+        },
+        {
+          "command": "oprof.recordUntilStopped",
+          "when": "view == oprof.runs",
+          "group": "1_record"
+        },
+        {
+          "command": "oprof.stopMarking",
+          "when": "view == oprof.runs",
+          "group": "1_record"
+        },
+        {
+          "command": "oprof.recordCron",
+          "when": "view == oprof.runs",
+          "group": "1_record"
+        },
+        {
+          "command": "oprof.setup",
+          "when": "view == oprof.runs",
+          "group": "3_settings"
+        },
+        {
+          "command": "oprof.fetchProfiles",
+          "when": "view == oprof.runs",
+          "group": "navigation@4"
+        },
+        {
+          "command": "oprof.searchRuns",
+          "when": "view == oprof.runs",
+          "group": "navigation@0"
+        },
+        {
+          "command": "oprof.openSpeedscopeFile",
+          "when": "view == oprof.runs",
+          "group": "2_open@1"
+        },
+        {
+          "command": "oprof.openOprofFile",
+          "when": "view == oprof.runs",
+          "group": "2_open@2"
+        },
+        {
+          "command": "oprof.importRecording",
+          "when": "view == oprof.runs",
+          "group": "2_open@3"
+        },
+        {
+          "command": "oprof.openDbGraph",
+          "when": "view == oprof.runs",
+          "group": "2_open@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "oprof.debugRun",
+          "when": "view == oprof.runs && viewItem =~ /replayable/",
+          "group": "inline@1"
+        },
+        {
+          "command": "oprof.openSpeedscope",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun/",
+          "group": "inline@2"
+        },
+        {
+          "command": "oprof.openCallStack",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun/",
+          "group": "inline@3"
+        },
+        {
+          "command": "oprof.debugRun",
+          "when": "view == oprof.runs && viewItem =~ /replayable/",
+          "group": "1_open@1"
+        },
+        {
+          "command": "oprof.openProfile",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun/",
+          "group": "1_open@2"
+        },
+        {
+          "command": "oprof.openSpeedscope",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun/",
+          "group": "1_open@3"
+        },
+        {
+          "command": "oprof.openCallStack",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun/",
+          "group": "1_open@4"
+        },
+        {
+          "command": "oprof.openCache",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun (odoo|file)/",
+          "group": "1_open@5"
+        },
+        {
+          "command": "oprof.debugRunFromStart",
+          "when": "view == oprof.runs && viewItem =~ /replayable/",
+          "group": "1_open@1"
+        },
+        {
+          "command": "oprof.setSourceVersion",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun/",
+          "group": "2_code@1"
+        },
+        {
+          "command": "oprof.deleteRun",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun odoo/",
+          "group": "inline@9"
+        },
+        {
+          "command": "oprof.deleteAllRuns",
+          "when": "view == oprof.runs && viewItem == database",
+          "group": "inline@9"
+        },
+        {
+          "command": "oprof.renameRun",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun odoo/",
+          "group": "8_edit@1"
+        },
+        {
+          "command": "oprof.deleteRun",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun odoo/",
+          "group": "8_edit@2"
+        },
+        {
+          "command": "oprof.deleteAllRuns",
+          "when": "view == oprof.runs && viewItem == database",
+          "group": "8_edit@1"
+        },
+        {
+          "command": "oprof.openRecords",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun (odoo|file)/",
+          "group": "1_open@6"
+        },
+        {
+          "command": "oprof.openProfile",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun/",
+          "group": "inline@4"
+        },
+        {
+          "command": "oprof.openRecords",
+          "when": "view == oprof.runs && viewItem =~ /oprofRun (odoo|file)/",
+          "group": "inline@5"
+        },
+        {
+          "command": "oprof.openGroupRecords",
+          "when": "view == oprof.runs && viewItem =~ /^(oprofGroup|oprofExport)$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "oprof.deleteGroup",
+          "when": "view == oprof.runs && viewItem == oprofGroup",
+          "group": "inline@9"
+        },
+        {
+          "command": "oprof.openGroupRecords",
+          "when": "view == oprof.runs && viewItem =~ /^(oprofGroup|oprofExport)$/",
+          "group": "1_open@1"
+        },
+        {
+          "command": "oprof.renameGroup",
+          "when": "view == oprof.runs && viewItem == oprofGroup",
+          "group": "8_edit@1"
+        },
+        {
+          "command": "oprof.deleteGroup",
+          "when": "view == oprof.runs && viewItem == oprofGroup",
+          "group": "8_edit@2"
+        },
+        {
+          "command": "oprof.hideProfileDatabase",
+          "when": "view == oprof.runs && viewItem =~ /profilesOnly/",
+          "group": "8_edit@1"
+        },
+        {
+          "command": "oprof.deleteOdooProfiles",
+          "when": "view == oprof.runs && viewItem =~ /^(oprofRun irprofile|oprofOdooSession|oprofOdooProfiles)$/",
+          "group": "inline@9"
+        },
+        {
+          "command": "oprof.deleteOdooProfiles",
+          "when": "view == oprof.runs && viewItem =~ /^(oprofRun irprofile|oprofOdooSession|oprofOdooProfiles)$/",
+          "group": "8_edit@2"
+        },
+        {
+          "command": "oprof.showCustomCode",
+          "when": "view == oprof.runs && viewItem =~ /^database/",
+          "group": "2_code@1"
+        },
+        {
+          "command": "oprof.searchRuns",
+          "when": "view == oprof.runs && viewItem =~ /^database/",
+          "group": "0_search@1"
+        },
+        {
+          "command": "oprof.searchRuns",
+          "when": "view == oprof.runs && viewItem =~ /^oprofGroup/",
+          "group": "0_search@1"
+        },
+        {
+          "command": "oprof.searchRuns",
+          "when": "view == oprof.runs && viewItem =~ /^oprofOdooProfiles/",
+          "group": "0_search@1"
+        },
+        {
+          "command": "oprof.searchRuns",
+          "when": "view == oprof.runs && viewItem =~ /^oprofOdooSession/",
+          "group": "0_search@1"
+        },
+        {
+          "command": "oprof.showCustomCode",
+          "when": "view == oprof.runs && viewItem =~ /^database/",
+          "group": "inline@8"
+        },
+        {
+          "command": "oprof.debugGroup",
+          "when": "view == oprof.runs && viewItem == oprofGroup",
+          "group": "inline@1"
+        },
+        {
+          "command": "oprof.debugGroup",
+          "when": "view == oprof.runs && viewItem == oprofGroup",
+          "group": "1_open@1"
+        },
+        {
+          "command": "oprof.debugGroupFromStart",
+          "when": "view == oprof.runs && viewItem == oprofGroup",
+          "group": "1_open@2"
+        },
+        {
+          "command": "oprof.importRecording",
+          "when": "view == oprof.runs && viewItem =~ /^(oprofExport|oprofRun file exported)$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "oprof.importRecording",
+          "when": "view == oprof.runs && viewItem =~ /^(oprofExport|oprofRun file exported)$/",
+          "group": "1_open@1"
+        },
+        {
+          "command": "oprof.openDbGraph",
+          "when": "view == oprof.runs && viewItem =~ /^database/",
+          "group": "2_code@2"
+        },
+        {
+          "command": "oprof.openDbGraph",
+          "when": "view == oprof.runs && viewItem =~ /^database/",
+          "group": "inline@7"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "oprof.setSourceVersion",
+          "when": "false"
+        },
+        {
+          "command": "oprof.debugRun",
+          "when": "false"
+        },
+        {
+          "command": "oprof.openProfile",
+          "when": "false"
+        },
+        {
+          "command": "oprof.openSpeedscope",
+          "when": "false"
+        },
+        {
+          "command": "oprof.openCallStack",
+          "when": "false"
+        },
+        {
+          "command": "oprof.openCache",
+          "when": "false"
+        },
+        {
+          "command": "oprof.debugRunFromStart",
+          "when": "false"
+        },
+        {
+          "command": "oprof.renameRun",
+          "when": "false"
+        },
+        {
+          "command": "oprof.deleteRun",
+          "when": "false"
+        },
+        {
+          "command": "oprof.deleteAllRuns",
+          "when": "false"
+        },
+        {
+          "command": "oprof.openRecords",
+          "when": "false"
+        },
+        {
+          "command": "oprof.openGroupRecords",
+          "when": "false"
+        },
+        {
+          "command": "oprof.renameGroup",
+          "when": "false"
+        },
+        {
+          "command": "oprof.deleteGroup",
+          "when": "false"
+        },
+        {
+          "command": "oprof.hideProfileDatabase",
+          "when": "false"
+        },
+        {
+          "command": "oprof.deleteOdooProfiles",
+          "when": "false"
+        },
+        {
+          "command": "oprof.openFile",
+          "when": "false"
+        },
+        {
+          "command": "oprof.debugGroup",
+          "when": "false"
+        },
+        {
+          "command": "oprof.debugGroupFromStart",
+          "when": "false"
+        }
+      ]
+    },
+    "customEditors": [
+      {
+        "viewType": "oprof.speedscope",
+        "displayName": "vscodetool profile viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.speedscope.json"
+          },
+          {
+            "filenamePattern": "*.oprof.json"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "oprof",
+        "label": "vscodetool (Odoo with the debugger)",
+        "languages": [
+          "python"
+        ],
+        "configurationAttributes": {
+          "launch": {
+            "properties": {
+              "database": {
+                "type": "string",
+                "description": "Database to run. Asked at each start when not set."
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Extra odoo-bin arguments."
+              },
+              "port": {
+                "type": "number",
+                "description": "HTTP port. Default: the port in the oprof.odoo.url setting, or the next free one."
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "oprof",
+            "request": "launch",
+            "name": "vscodetool: Run Odoo"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "vscodetool: Run Odoo",
+            "description": "Odoo with the vscodetool addon, under the Python debugger: live breakpoints, marked runs profiled and replayable",
+            "body": {
+              "type": "oprof",
+              "request": "launch",
+              "name": "vscodetool: Run Odoo"
+            }
+          }
+        ]
+      }
+    ],
+    "configuration": {
+      "title": "vscodetool",
+      "properties": {
+        "oprof.odoo.url": {
+          "type": "string",
+          "default": "http://127.0.0.1:8069",
+          "description": "Where vscodetool's Odoo server listens: only its port is used (the next free one if taken); it always binds 127.0.0.1."
+        },
+        "oprof.odoo.database": {
+          "type": "string",
+          "default": "",
+          "description": "Database used by the recorded server and the Runs view."
+        },
+        "oprof.python": {
+          "type": "string",
+          "default": "",
+          "description": "Python of your Odoo venv (3.12+)."
+        },
+        "oprof.odooSource": {
+          "type": "string",
+          "default": "",
+          "description": "Odoo community checkout (the folder with odoo-bin)."
+        },
+        "oprof.addonsPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Addons paths, in order. The vscodetool addon folder is added automatically."
+        },
+        "oprof.server.extraArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Extra odoo-bin arguments for the recorded server."
+        },
+        "oprof.collectors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "sql",
+            "traces_async",
+            "oprof"
+          ],
+          "description": "Profiler collectors for marked runs. 'oprof' (vscodetool's collector) records caches and every call; 'traces_sync' is very large."
+        },
+        "oprof.cron.maxBatches": {
+          "type": "number",
+          "default": 0,
+          "description": "Batches to record for a cron run (0 = all)."
+        },
+        "oprof.recordCalls": {
+          "type": "boolean",
+          "default": true,
+          "description": "Record every Python call of a marked run (exact call stack and speedscope). Makes marked requests about 5-8 times slower; turn off for SQL and caches only."
+        },
+        "oprof.showProfilerFrames": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the profiler's own frames (vscodetool's hooks, Odoo's profiler.py) in the views. Off: hooks are removed and their time goes to the caller (a query's time to Cursor.execute), and the profiler's bookkeeping shows as one profiler overhead frame."
+        },
+        "oprof.hideMissingCode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Leave out of the views the frames whose code isn't on this machine (e.g. a customer's modules, in a profile made on Odoo.sh): their callees and time go to their caller. Profiles made elsewhere are matched to your Odoo checkout and addons paths by the end of their file paths."
+        },
+        "oprof.retentionDays": {
+          "type": "number",
+          "default": 14,
+          "minimum": 0,
+          "description": "Delete vscodetool runs (with their profile and recording) and Odoo profiler entries older than this many days, in the databases of the side bar (checked once a day per database). 0: keep everything."
+        }
+      }
+    },
+    "colors": [
+      {
+        "id": "oprof.speedscopeIcon",
+        "description": "Speedscope icon in the vscodetool side bar.",
+        "defaults": {
+          "dark": "#ffb86c",
+          "light": "#d9822b",
+          "highContrast": "#ffb86c",
+          "highContrastLight": "#b35c00"
+        }
+      },
+      {
+        "id": "oprof.debugIcon",
+        "description": "Debug actions in the vscodetool side bar (a green distinct from the run icons').",
+        "defaults": {
+          "dark": "#4ec9b0",
+          "light": "#13836b",
+          "highContrast": "#4ec9b0",
+          "highContrastLight": "#0f6b57"
+        }
+      },
+      {
+        "id": "oprof.groupIcon",
+        "description": "Recording sessions in the vscodetool side bar.",
+        "defaults": {
+          "dark": "#f48771",
+          "light": "#c4314b",
+          "highContrast": "#f48771",
+          "highContrastLight": "#b5200d"
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs",
+    "package": "scripts/package.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^3.2.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.6.0"
+  }
+}

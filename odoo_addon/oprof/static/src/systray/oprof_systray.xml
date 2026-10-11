@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="oprof.Systray">
+        <div class="o_oprof_systray">
+            <Dropdown onOpened="() => this.refresh()">
+                <button t-att-title="this.label" class="py-1 py-lg-0">
+                    <!-- an SVG, not an icon font: 20.0 has no Font Awesome any more (its icons are Material Symbols) -->
+                    <svg class="o_oprof_icon" t-att-class="{'text-danger': this.recording}" viewBox="0 0 16 16" width="16" height="16" role="img" aria-label="oprof">
+                        <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                        <circle cx="8" cy="8" r="3.5" fill="currentColor"/>
+                    </svg>
+                </button>
+                <t t-set-slot="content">
+                    <div class="dropdown-item d-flex align-items-center justify-content-between gap-3" t-on-click.stop="() => this.toggle()">
+                        <span>Record requests</span>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" role="switch" t-att-checked="this.recording" aria-label="Record requests"/>
+                        </div>
+                    </div>
+                    <div role="separator" class="dropdown-divider"/>
+                    <DropdownItem onSelected="() => this.openRuns()">Open vscodetool runs</DropdownItem>
+                </t>
+            </Dropdown>
+        </div>
+    </t>
+</templates>

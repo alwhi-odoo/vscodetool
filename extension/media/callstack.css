@@ -1,0 +1,6 @@
+html, body { height: 100%; overflow: hidden; }
+body { display: flex; flex-direction: column; }
+#toolbar { display: flex; gap: 8px; align-items: center; padding: 6px 10px; flex-wrap: wrap; }
+#toolbar input[type=search] { min-width: 220px; }
+#toolbar .hint { font-size: 0.9em; }
+#stack { flex: 1; min-height: 0; overflow: auto; }
