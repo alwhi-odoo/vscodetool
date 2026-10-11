@@ -1,3 +1,6 @@
+# AI Disclaimer: 
+The project was fully implemented by Claude Code. All documentation beyond this paragraph is AI generated. 
+
 # vscodetool
 
 Profile any Odoo request (or cron run) and look into it inside VS Code: every profiler number, a
